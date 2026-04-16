@@ -1,0 +1,99 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: kurakani-postgres
+    environment:
+      POSTGRES_DB: chat-app-db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - internal
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: kurakani-rustfs
+    volumes:
+      - rustfs_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    container_name: kurakani-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - internal
+
+  backend:
+    build:
+      context: ./kurakaani-backend
+      dockerfile: Dockerfile
+    container_name: kurakaani-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/chat-app-db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+      MAIL_USERNAME: aojha6822@gmail.com
+      MAIL_PASSWORD: randomasspassword
+      STORAGE_ENDPOINT: http://rustfs:9000
+      STORAGE_ACCESS_KEY: rustfsadmin
+      STORAGE_SECRET_KEY: rustfsadmin
+      STORAGE_BUCKET: kurakaani
+      STORAGE_REGION: rustfs
+      JWT_SECRET: TOYLwSbD3s8U0SmuFuVSBWJDa0dlyoXbjSDmDgEXnEN
+      JWT_EXPIRATION_SECONDS: "864000"
+    ports:
+      - 8050:8080
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rustfs:
+        condition: service_started
+    networks:
+      - internal
+
+  frontend:
+    build:
+      context: ./kurakaani-frontend
+      dockerfile: Dockerfile
+    container_name: kurakaani-frontend
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - internal
+
+volumes:
+  postgres_data:
+  rustfs_data:
+  redis_data:
+
+networks:
+  internal:
+    driver: bridge
+    name: kurakaani
