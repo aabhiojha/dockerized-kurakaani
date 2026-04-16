@@ -3,7 +3,7 @@ services:
     image: postgres:17-alpine
     container_name: kurakani-postgres
     environment:
-      POSTGRES_DB: chat-app-db
+      POSTGRES_DB: kurakaani-db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:
@@ -50,12 +50,12 @@ services:
     container_name: kurakaani-backend
     environment:
       SPRING_PROFILES_ACTIVE: dev
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/chat-app-db
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/kurakaani-db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: "6379"
-      MAIL_USERNAME: aojha6822@gmail.com
+      MAIL_USERNAME: notavalidemail@example.com
       MAIL_PASSWORD: randomasspassword
       STORAGE_ENDPOINT: http://rustfs:9000
       STORAGE_ACCESS_KEY: rustfsadmin
